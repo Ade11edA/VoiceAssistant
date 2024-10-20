@@ -4,68 +4,73 @@ import threading
 import tkinter as tk
 import subprocess
 from datetime import datetime
+import pyautogui
+import time
+import webbrowser
 
 class VoiceAssistant:
     def __init__(self):
         self.recognizer = sr.Recognizer()
         self.speaker = pyttsx3.init()
-        self.speaker.setProperty("rate", 350)
-
+        self.speaker.setProperty("rate", 250)
+        
         # GUI
         self.root = tk.Tk()
-        self.label = tk.Label(text="Inactive", font=("Arial", 120, "bold"))
+        self.label = tk.Label(text="No Commands", font=("Arial", 120, "bold"))
         self.label.pack()
 
-        threading.Thread(target=self.runAssistant, daemon=True).start()
+        threading.Thread(target=self.listen_for_commands, daemon=True).start()
         self.root.mainloop()
-
-
-
-    def wakeUp(self):
-        with sr.Microphone() as mic:
-            self.recognizer.adjust_for_ambient_noise(mic, duration=0.2)
-            audio = self.recognizer.listen(mic)
-            try:
-                if 'start' in self.recognizer.recognize_google(audio).lower():
-                    print("I'm up")
-                    self.label.config(text="active")
-                    return True
-            except sr.UnknownValueError:
-                self.label.config(text="inactive")
-                print("Could not understand audio")
-            except sr.RequestError:
-                self.label.config(text="inactive")
-                print("Could not request results from service")
-        return False
-
-    def runAssistant(self):
-        while True:
-            if self.wakeUp():
-                self.speaker.say("Hello there")
-                self.speaker.runAndWait() 
-                with sr.Microphone() as mic:
-                    self.recognizer.adjust_for_ambient_noise(mic, duration=0.2)
-                    audio = self.recognizer.listen(mic)
-                    try:
-                        command = self.recognizer.recognize_google(audio)
-                        print(f"You said: {command}")
-                        if "what time is it" in command.lower():
-                            self.speaker.say(datetime.now())
-                        if "open calculator" in command.lower():
-                            self.openApp("calc.exe")
-                            
-                    except sr.UnknownValueError:
-                        print("Could not understand the command")
-                    except sr.RequestError:
-                        print("Could not request results from service")
-                        
-    def openApp(self, appName):
-        try:
-            subprocess.Popen(appName)
-            self.speaker.say(f"Opening {appName.split('.')[0]}")
+    
+    def listen_for_commands(self):
+        with sr.Microphone() as source:
+            print("Listening for commands")
+            while True:
+                try:
+                    # Listen for a command
+                    audio = self.recognizer.listen(source)
+                    command = self.recognizer.recognize_google(audio).lower()
+                    print(f"You said: {command}")
+                    self.label.config(text="You said: "+ command, font=("Arial", 60, "bold"))
+                    
+                    self.process_command(command)
+                except sr.UnknownValueError:
+                    print("Sorry, I did not understand that.")
+                except sr.RequestError as e:
+                    print(f"Could not request results; {e}")
+    def process_command(self, command):
+        if "click" in command:
+            # Click the button based on a keyword (simple example)
+            button_name = command.split("click")[-1].strip()
+            # click_button(button_name)
+        elif "search" in command:
+            search_term = command.split("search")[-1].strip()
+            self.searchWebsite(search_term)
+        elif "open" in command:
+            app_name = command.split("open")[-1].strip()
+            self.openApp(app_name)
+        elif "hello" in command:
+            self.speaker.say("Hello there")
             self.speaker.runAndWait()
-        except Exception as e:
-            print(f"Failed to open {appName}: {e}")
-
+        elif "look up" in command:
+            term = command.split("look up")[-1].strip()
+            self.lookUp(term)
+            
+    
+    def openApp(self, app):
+        print("opening " + app)
+    
+    def searchWebsite(self, site):
+        print(f"Searching for: {site}")
+        webbrowser.open_new_tab(site)
+        
+    def lookUp(self, term):
+        print(f"Searching for: {term}")
+        webbrowser.open()
+        pyautogui.hotkey('ctrl', 't')
+        pyautogui.hotkey('ctrl', 'l')  # Focus on the address bar
+        pyautogui.typewrite(f'https://www.google.com/search?q={term}')
+        pyautogui.press('enter')
+        
 if __name__ == "__main__":
     VoiceAssistant()
