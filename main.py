@@ -7,6 +7,7 @@ from datetime import datetime
 import pyautogui
 import time
 import webbrowser
+import subprocess
 
 class VoiceAssistant:
     def __init__(self):
@@ -59,6 +60,20 @@ class VoiceAssistant:
     
     def openApp(self, app):
         print("opening " + app)
+        appList = {
+            "notepad": "notepad.exe",
+            "calculator": "calc.exe",
+            "firefox": "firefox",
+        }
+
+        appCommand = appList.get(app.lower())
+        if appCommand:
+            subprocess.Popen(appCommand)
+        else:
+            try:
+                print("Cannot find app")
+            except Exception as e:
+                print(f"Failed to open {app}: {e}")
     
     def searchWebsite(self, site):
         print(f"Searching for: {site}")
@@ -66,11 +81,8 @@ class VoiceAssistant:
         
     def lookUp(self, term):
         print(f"Searching for: {term}")
-        webbrowser.open()
-        pyautogui.hotkey('ctrl', 't')
-        pyautogui.hotkey('ctrl', 'l')  # Focus on the address bar
-        pyautogui.typewrite(f'https://www.google.com/search?q={term}')
-        pyautogui.press('enter')
+        url = f'https://www.google.com/search?q={term}'
+        webbrowser.open(url)
         
 if __name__ == "__main__":
     VoiceAssistant()
