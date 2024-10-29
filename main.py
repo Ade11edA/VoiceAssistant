@@ -8,9 +8,15 @@ import pyautogui
 import time
 import webbrowser
 import subprocess
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from webdriver_manager.firefox import GeckoDriverManager
 
 class VoiceAssistant:
     def __init__(self):
+        self.driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
         self.recognizer = sr.Recognizer()
         self.speaker = pyttsx3.init()
         self.speaker.setProperty("rate", 250)
@@ -41,9 +47,8 @@ class VoiceAssistant:
                     print(f"Could not request results; {e}")
     def process_command(self, command):
         if "click" in command:
-            # Click the button based on a keyword (simple example)
-            button_name = command.split("click")[-1].strip()
-            # click_button(button_name)
+            elementName = command.split("click")[-1].strip()
+            self.clickElement(elementName)
         elif "search" in command:
             search_term = command.split("search")[-1].strip()
             self.searchWebsite(search_term)
@@ -57,13 +62,20 @@ class VoiceAssistant:
             term = command.split("look up")[-1].strip()
             self.lookUp(term)
             
-    
+    def clickElement(self, elementName):
+        elements = self.driver.find_elements(By.XPATH, "//*")
+        
+        for element in elements:
+            if element.text.lower() == elementName.lower():
+                element.click()
+        print("clicks a button")
+        
     def openApp(self, app):
         print("opening " + app)
         appList = {
             "notepad": "notepad.exe",
             "calculator": "calc.exe",
-            "firefox": "firefox",
+            "firefox": "firefox.exe",
         }
 
         appCommand = appList.get(app.lower())
@@ -77,12 +89,12 @@ class VoiceAssistant:
     
     def searchWebsite(self, site):
         print(f"Searching for: {site}")
-        webbrowser.open_new_tab(site)
+        webbrowser.get('mozilla').open_new_tab(site) #doesn't seem to be opening default browser, will look into it later
         
     def lookUp(self, term):
         print(f"Searching for: {term}")
         url = f'https://www.google.com/search?q={term}'
-        webbrowser.open(url)
+        webbrowser.get('firefox').open(url) #https://stackoverflow.com/questions/47118598/python-how-to-open-default-browser-using-webbrowser-module
         
 if __name__ == "__main__":
     VoiceAssistant()
