@@ -18,6 +18,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 class VoiceAssistant:
     def __init__(self):
         self.driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
+        self.driver.get("about:home")
         self.recognizer = sr.Recognizer()
         self.speaker = pyttsx3.init()
         self.speaker.setProperty("rate", 250)
@@ -29,8 +30,11 @@ class VoiceAssistant:
         self.label = tk.Label(self.root, text="Command History:", font=("Arial", 18), fg="#FFFFFF", bg="#021919")
         self.label.pack()
         self.root.config(bg="#021919")
-        self.root.geometry("800x500")
+        self.root.geometry("1500x1000")
         self.root.title("Assistant")
+        self.sidePanelFrame = tk.Label(self.root, bg="#021919", width=200, font=("Arial", 18))
+        self.sidePanelFrame.pack(side="left", fill="y")
+        self.sidePanelFrame.config(text="Available Commands: \nClick \nsearch (a website) \nOpen (an app) \nLook up (search term) \nType (Turns on dictitation tool)")
 
         threading.Thread(target=self.listen_for_commands, daemon=True).start()
         self.root.mainloop()
@@ -81,6 +85,9 @@ class VoiceAssistant:
             elif "type" in command:
                 term = command.split("type")[-1].strip()
                 self.Dictate(term)
+            elif "scroll" in command:
+                direction = command.split("scroll")[-1].strip()
+                self.scroll(direction)
     
     def Dictate(self, term):
         pyautogui.typewrite(term)
@@ -91,6 +98,13 @@ class VoiceAssistant:
         for element in elements:
             if element.text.lower() == elementName.lower():
                 element.click()
+                
+    def scroll(self, direction):
+        body = self.driver.find_element("tag name", "body")
+        if (direction == "down" or direction == ""):
+            body.send_keys(Keys.PAGE_DOWN)
+        else:
+            body.send_keys(Keys.PAGE_UP)
         
     def openApp(self, app):
         print("opening " + app)
