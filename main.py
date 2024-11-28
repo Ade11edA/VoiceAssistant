@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from webdriver_manager.firefox import GeckoDriverManager
+#from playwright.sync_api import sync_playwright
 
 class VoiceAssistant:
     def __init__(self):
@@ -20,13 +21,16 @@ class VoiceAssistant:
         self.recognizer = sr.Recognizer()
         self.speaker = pyttsx3.init()
         self.speaker.setProperty("rate", 250)
-        self.listening = True
+        self.listening = False
+
         
         # GUI
         self.root = tk.Tk()
-        self.label = tk.Label(text="No Commands", font=("Arial", 120, "bold"))
+        self.label = tk.Label(self.root, text="Command History:", font=("Arial", 18), fg="#FFFFFF", bg="#021919")
         self.label.pack()
-        
+        self.root.config(bg="#021919")
+        self.root.geometry("800x500")
+        self.root.title("Assistant")
 
         threading.Thread(target=self.listen_for_commands, daemon=True).start()
         self.root.mainloop()
@@ -41,7 +45,7 @@ class VoiceAssistant:
                     audio = self.recognizer.listen(source)
                     command = self.recognizer.recognize_google(audio).lower()
                     print(f"You said: {command}")
-                    self.label.config(text="You said: "+ command, font=("Arial", 60, "bold"))
+                    self.label.config(text= self.label.cget("text")+"\n" + command)
                     self.process_command(command)
                 except sr.UnknownValueError:
                     print("Sorry, I did not understand that.")
@@ -107,7 +111,8 @@ class VoiceAssistant:
     
     def searchWebsite(self, site):
         print(f"Searching for: {site}")
-        webbrowser.get('mozilla').open_new_tab(site) #doesn't seem to be opening default browser, will look into it later
+        removedSpaces = site.replace(" ","")
+        webbrowser.open_new_tab(site) #doesn't seem to be opening default browser, will look into it later
         
     def lookUp(self, term):
         print(f"Searching for: {term}")
