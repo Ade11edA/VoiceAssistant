@@ -1,3 +1,5 @@
+import platform
+import sys
 import speech_recognition as sr
 import pyttsx3
 import threading
@@ -5,7 +7,6 @@ import tkinter as tk
 import subprocess
 from datetime import datetime
 import pyautogui
-import time
 import webbrowser
 import subprocess
 from selenium import webdriver
@@ -13,7 +14,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.common.action_chains import ActionChains
 #from playwright.sync_api import sync_playwright
+from pywinauto.application import Application
 
 class VoiceAssistant:
     def __init__(self):
@@ -34,7 +37,7 @@ class VoiceAssistant:
         self.root.title("Assistant")
         self.sidePanelFrame = tk.Label(self.root, bg="#021919", width=200, font=("Arial", 18))
         self.sidePanelFrame.pack(side="left", fill="y")
-        self.sidePanelFrame.config(text="Available Commands: \nClick \nsearch (a website) \nOpen (an app) \nLook up (search term) \nType (Turns on dictitation tool)")
+        self.sidePanelFrame.config(text="Available Commands: \nClick \nsearch (a website) \nOpen (an app) \nLook up (search term) \nType (Turns on dictitation tool)", fg="#FFFFFF") 
 
         threading.Thread(target=self.listen_for_commands, daemon=True).start()
         self.root.mainloop()
@@ -70,6 +73,15 @@ class VoiceAssistant:
             if "click" in command:
                 elementName = command.split("click")[-1].strip()
                 self.clickElement(elementName)
+                self.speaker.say("Is the button you would like to click on an app or a website?")
+                self.speaker.runAndWait()
+                if "app" in command:
+                    self.speaker.say("What is the app?")
+                    self.speaker.runAndWait()
+                    app = command
+                    self.click_app_button(elementName, app)
+                else:
+                    self.clickElement(elementName)
             elif "search" in command:
                 search_term = command.split("search")[-1].strip()
                 self.searchWebsite(search_term)
@@ -99,39 +111,69 @@ class VoiceAssistant:
             if element.text.lower() == elementName.lower():
                 element.click()
                 
-    def scroll(self, direction):
+    def click_app_button(self, buttonName, app_name):
+        app = Application().connect(title=app_name)
+        window = app.window(title=app_name)
+        try:
+            button = window.child_window(title=buttonName, control_type="Button")
+            button.click_input()
+            print(f"Button '{buttonName}' clicked.")
+        except Exception as e:
+            print(f"Could not find button '{buttonName}': {str(e)}")
+
+
+
+    def scroll(self, detail):
         body = self.driver.find_element("tag name", "body")
-        if (direction == "down" or direction == ""):
+        if (detail == "down" or detail == ""):
             body.send_keys(Keys.PAGE_DOWN)
-        else:
+        elif (detail == "up"):
             body.send_keys(Keys.PAGE_UP)
+        else:
+            elements = self.driver.find_elements(By.XPATH, "//*")
+            actions = ActionChains(self.driver)
+            actions.move_to_element(self.element).perform()
+            for element in elements:
+                if element.text.lower() == detail.lower():
+                    actions.move_to_element(element).perform()
+                
         
     def openApp(self, app):
+        current_os = platform.system().lower()
         print("opening " + app)
-        appList = {
-            "notepad": "notepad.exe",
-            "calculator": "calc.exe",
-            "firefox": "firefox.exe",
-        }
-
-        appCommand = appList.get(app.lower())
-        if appCommand:
-            subprocess.Popen(appCommand)
-        else:
-            try:
-                print("Cannot find app")
-            except Exception as e:
-                print(f"Failed to open {app}: {e}")
+        try:
+            if sys.platform == "win32":
+                subprocess.run(["start", app], shell=True)
+            elif sys.platform == "darwin":
+                subprocess.run(["open", "-a", app])
+            elif sys.platform == "linux" or sys.platform == "linux2":
+                subprocess.run([app])
+            else:
+                print("Unsupported OS")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        appConnect = Application().connect(title=app)
     
     def searchWebsite(self, site):
         print(f"Searching for: {site}")
         removedSpaces = site.replace(" ","")
-        webbrowser.open_new_tab(site) #doesn't seem to be opening default browser, will look into it later
+        #webbrowser.open_new_tab(site) #doesn't seem to be opening default browser, will look into it later
+        try:
+            self.driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + 't')
+            self.driver.get("https://www."+removedSpaces)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+        
         
     def lookUp(self, term):
         print(f"Searching for: {term}")
         url = f'https://www.google.com/search?q={term}'
-        webbrowser.get('firefox').open(url) #https://stackoverflow.com/questions/47118598/python-how-to-open-default-browser-using-webbrowser-module
+        #webbrowser.get('firefox').open(url) #https://stackoverflow.com/questions/47118598/python-how-to-open-default-browser-using-webbrowser-module
+        try:
+            self.driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + 't')
+            self.driver.get(url)
+        except Exception as e:
+            print(f"An error occurred: {e}")
         
 if __name__ == "__main__":
     VoiceAssistant()
